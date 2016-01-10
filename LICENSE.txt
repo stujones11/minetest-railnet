@@ -1,0 +1,18 @@
+Minetest Modpack - Railnet [minetest-railnet]
+=============================================
+
+**License Source Code:** LGPL v2.1
+
+**License of media** (textures, sounds and models): CC-0
+
+Authors of media files:
+-----------------------
+
+kddekadenz:
+  cart_bottom.png
+  cart_side.png
+  cart_top.png
+
+rarkenin:
+  cart_rail_*.png
+

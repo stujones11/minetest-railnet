@@ -96,11 +96,14 @@ minetest.register_tool("railtrack:fixer", {
 			end
 		end
 		local node = minetest.get_node(pos)
-		minetest.remove_node(pos)
-		set_node(pos, node)
-		local def = minetest.registered_items[node.name] or {}
-		if type(def.after_place_node) == "function" then
-			def.after_place_node(pos, user, node)
+		if node then
+			minetest.remove_node(pos)
+			minetest.set_node(pos, node)
+			local def = minetest.registered_items[node.name] or {}
+			local itemstack = ItemStack(node.name)
+			if type(def.after_place_node) == "function" then
+				def.after_place_node(pos, user, itemstack)
+			end
 		end
 	end,
 })

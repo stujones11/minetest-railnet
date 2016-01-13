@@ -22,18 +22,6 @@ railtrack.default_rail = {
 	groups = {bendy = 2, dig_immediate = 2, attached_node = 1,
 		connect_to_raillike = minetest.raillike_group("rail")},
 	railtype = "rail",
-	on_place = function(itemstack, placer, pointed_thing)
-		local name = placer:get_player_name()
-		if not name or pointed_thing.type ~= "node" then
-			return
-		end
-		if not minetest.is_singleplayer() then
-			if not minetest.check_player_privs(name, {rails=true}) then
-				minetest.chat_send_player(name, "Requires rails privilege")
-				return
-			end
-		end
-	end,
 	after_place_node = function(pos, placer, itemstack)
 		local meta = minetest.get_meta(pos)
 		local def = itemstack:get_definition() or {}
@@ -57,7 +45,13 @@ railtrack.default_rail = {
 	on_construct = function(pos)
 		railtrack:update_rails(pos)
 	end,
-	after_destruct = function(pos)
+	after_destruct = function(pos, oldnode)
+		if not minetest.is_singleplayer() then
+			if not minetest.check_player_privs(name, {rails=true}) then
+				minetest.chat_send_player(name, "Requires rails privilege")
+				minetest.set_node(pos, oldnode)
+			end
+		end
 		local cons = railtrack:get_connections(pos)
 		for _, p in pairs(cons) do
 			railtrack:update_rails(p)

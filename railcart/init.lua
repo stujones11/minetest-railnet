@@ -32,6 +32,10 @@ minetest.register_globalstep(function(dtime)
 	end
 end)
 
+minetest.register_on_shutdown(function()
+	railcart:save()
+end)
+
 minetest.register_privilege("carts", "Player can pick-up and place carts.")
 
 minetest.register_entity("railcart:cart_entity", {
@@ -58,6 +62,7 @@ minetest.register_entity("railcart:cart_entity", {
 			if self.cart then
 				if self.cart.id then
 					railcart.allcarts[self.cart.id] = nil
+					railcart:save()
 				end
 			end
 			self.object:remove()
@@ -136,6 +141,7 @@ minetest.register_craftitem("railcart:cart", {
 		cart.prev = vector.new(pos)
 		cart.accel = railtrack:get_acceleration(pos)
 		table.insert(railcart.allcarts, cart)
+		railcart:save()
 		if not minetest.setting_getbool("creative_mode") then
 			itemstack:take_item()
 		end

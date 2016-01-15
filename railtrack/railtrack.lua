@@ -46,12 +46,6 @@ railtrack.default_rail = {
 		railtrack:update_rails(pos)
 	end,
 	after_destruct = function(pos, oldnode)
-		if not minetest.is_singleplayer() then
-			if not minetest.check_player_privs(name, {rails=true}) then
-				minetest.chat_send_player(name, "Requires rails privilege")
-				minetest.set_node(pos, oldnode)
-			end
-		end
 		local cons = railtrack:get_connections(pos)
 		for _, p in pairs(cons) do
 			railtrack:update_rails(p)

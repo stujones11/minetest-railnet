@@ -199,7 +199,8 @@ function railcart:update(cart, time, object)
 				accel = RAILTRACK_ACCEL_UP
 			end
 			accel = cart.accel or accel
-			local dt = railcart:get_delta_time(speed, accel, dist)
+			local d = dist - RAILCART_SNAP_DISTANCE
+			local dt = railcart:get_delta_time(speed, accel, d)
 			if dt < time then
 				time = dt
 			end

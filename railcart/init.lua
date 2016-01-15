@@ -79,10 +79,11 @@ minetest.register_entity("railcart:cart_entity", {
 		if self.cart and direction then
 			local pos = vector.round(self.object:getpos())
 			local dir = vector.round(vector.normalize(direction))
+			local speed = railcart:velocity_to_speed(self.cart.vel)
 			self.timer = 0
 			self.cart.target = nil
 			self.cart.prev = pos
-			self.cart.vel = vector.multiply(dir, 4)
+			self.cart.vel = vector.multiply(dir, RAILCART_SPEED_PUSH)
 			self.cart.accel = railtrack:get_acceleration(pos)
 			self.object:setvelocity(self.cart.vel)
 		end

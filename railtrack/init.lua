@@ -29,7 +29,7 @@ railtrack:register_rail("railtrack:powerrail", {
 				railtrack:set_acceleration(pos, 4)
 			end,
 			action_off = function(pos, node)
-				railtrack:set_acceleration(pos, RAILTRACK_FRICTION_FLAT)
+				railtrack:set_acceleration(pos, nil)
 			end,
 		},
 	},
@@ -47,7 +47,7 @@ railtrack:register_rail("railtrack:brakerail", {
 				railtrack:set_acceleration(pos, -4)
 			end,
 			action_off = function(pos, node)
-				railtrack:set_acceleration(pos, RAILTRACK_FRICTION_FLAT)
+				railtrack:set_acceleration(pos, nil)
 			end,
 		},
 	},

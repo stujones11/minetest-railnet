@@ -200,8 +200,10 @@ function railcart:update(cart, time, object)
 				accel = RAILTRACK_ACCEL_UP
 			end
 			accel = cart.accel or accel
-			local d = dist - RAILCART_SNAP_DISTANCE
-			local dt = railcart:get_delta_time(speed, accel, d)
+			if object then
+				dist = math.max(dist - RAILCART_SNAP_DISTANCE, 0)
+			end
+			local dt = railcart:get_delta_time(speed, accel, dist)
 			if dt < time then
 				time = dt
 			end

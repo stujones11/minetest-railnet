@@ -19,6 +19,7 @@ railcart.cart = {
 	target = nil,
 	prev = nil,
 	accel = nil,
+	inv = nil,
 	dir = {x=0, y=0, z=0},
 	vel = {x=0, y=0, z=0},
 	acc = {x=0, y=0, z=0},
@@ -75,6 +76,14 @@ function railcart:save()
 		for k, v in pairs(cart) do
 			ref[k] = v
 		end
+		local inv = {}
+		if ref.inv then
+			local list = ref.inv:get_list("main")
+			for i, stack in ipairs(list) do
+			  inv[i] = stack:to_string()
+			end
+		end
+		ref.inv = inv
 		ref.entity = nil
 		table.insert(carts, ref)
 	end
@@ -83,6 +92,28 @@ function railcart:save()
 		output:write(minetest.serialize(carts))
 		io.close(output)
 	end
+end
+
+function railcart:create_detached_inventory(id)
+	local inv = minetest.create_detached_inventory("railcart_"..tostring(id), {
+		on_put = function(inv, listname, index, stack, player)
+			railcart:save()
+		end,
+		on_take = function(inv, listname, index, stack, player)
+			railcart:save()
+		end,
+		allow_put = function(inv, listname, index, stack, player)
+			return 1
+		end,
+		allow_take = function(inv, listname, index, stack, player)
+			return stack:get_count()
+		end,
+		allow_move = function(inv, from_list, from_index, to_list, to_index, count, player)
+			return count
+		end,
+	})
+	inv:set_size("main", 32)
+	return inv
 end
 
 function railcart:get_cart_ref(id)

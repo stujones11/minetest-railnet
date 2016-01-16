@@ -9,7 +9,14 @@ if input then
 	if data then
 		local carts = minetest.deserialize(data) or {}
 		for id, ref in pairs(carts) do
-			railcart.allcarts[id] = railcart.cart:new(ref)
+			local cart = railcart.cart:new(ref)
+			local inv = railcart:create_detached_inventory(cart.id)
+			ref.inv = ref.inv or {}
+			for i, stack in pairs(ref.inv) do
+				inv:set_stack("main", i, stack)
+			end
+			cart.inv = inv
+			railcart.allcarts[id] = cart
 		end
 	end
 	input = nil
@@ -92,6 +99,22 @@ minetest.register_entity("railcart:cart_entity", {
 		if not is_valid_player(clicker) then
 			return
 		end
+		if clicker:get_player_control().sneak then
+			local name = clicker:get_player_name()
+			local cart = self.cart or {}
+			if cart.id and name then
+				local formspec = "size[8,9]"..
+					default.gui_bg..default.gui_bg_img..default.gui_slots..
+					"list[detached:railcart_"..cart.id..";main;0,0.3;8,4;]"..
+					"list[current_player;main;0,4.85;8,1;]"..
+					"list[current_player;main;0,6.08;8,3;8]"..
+					"listring[detached:railcart_"..cart.id..";main]"..
+					"listring[current_player;main]"..
+					default.get_hotbar_bg(0,4.85)
+				minetest.show_formspec(name, "inventory", formspec)
+			end
+			return
+		end
 		if self.driver and clicker == self.driver then
 			self.driver = nil
 			clicker:set_detach()
@@ -138,6 +161,7 @@ minetest.register_craftitem("railcart:cart", {
 		end
 		local cart = railcart.cart:new()
 		cart.id = #railcart.allcarts + 1
+		cart.inv = railcart:create_detached_inventory(cart.id)
 		cart.pos = pos
 		cart.prev = vector.new(pos)
 		cart.accel = railtrack:get_acceleration(pos)

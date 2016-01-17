@@ -136,6 +136,12 @@ minetest.register_entity("railcart:cart_entity", {
 		self.timer = railcart:update(cart, RAILCART_ENTITY_UPDATE_TIME, object)
 	end,
 	get_staticdata = function(self)
+		if self.cart then
+			if self.cart:is_loaded() == false then
+				self.cart.timer = 0
+				self.object:remove()
+			end
+		end
 		return "expired"
 	end,
 })

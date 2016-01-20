@@ -1,4 +1,4 @@
-RAILTRACK_WARN_SECTION_LEN = 20
+RAILTRACK_MAX_SECTION_LEN = 20
 RAILTRACK_ROTATIONS = "FLR"
 RAILTRACK_ACCEL_FLAT = -0.5
 RAILTRACK_ACCEL_UP = -2
@@ -32,11 +32,11 @@ railtrack.default_rail = {
 		local contype = meta:get_string("contype") or ""
 		local s_cons = meta:get_string("connections") or ""
 		if contype == "section" then
-			railtrack:warn_section_len(placer, pos, meta)
+			railtrack:limit_section_len(placer, pos, meta)
 		elseif s_cons ~= "" then
 			local cons = minetest.deserialize(s_cons)
 			for _, con in pairs(cons) do
-				if railtrack:warn_section_len(placer, con) then
+				if railtrack:limit_section_len(placer, con) then
 					break
 				end
 			end
@@ -53,18 +53,35 @@ railtrack.default_rail = {
 	end,
 }
 
+function railtrack:copy(t)
+	if type(t) ~= "table" then
+		return t
+	end
+	local copy = {}
+	for k, v in pairs(t) do
+		copy[k] = v
+	end
+	return copy
+end
+
 function railtrack:register_rail(name, def)
+	local udef = {}
 	for k, v in pairs(railtrack.default_rail) do
 		if not def[k] then
-			def[k] = v
+			def[k] = railtrack:copy(v)
 		end
+		udef[k] = railtrack:copy(def[k])
 	end
 	def.inventory_image = def.inventory_image or def.tiles[1]
 	def.wield_image = def.wield_image or def.tiles[1]
 	minetest.register_node(name, def)
+	udef.drop = name
+	udef.railtype = udef.railtype.."_union"
+	udef.groups.not_in_creative_inventory=1
+	minetest.register_node(name.."_union", udef)
 end
 
-function railtrack:warn_section_len(player, pos, meta)
+function railtrack:limit_section_len(player, pos, meta)
 	meta = meta or minetest.get_meta(pos)
 	local contype = meta:get_string("contype") or ""
 	if contype == "section" then
@@ -73,13 +90,11 @@ function railtrack:warn_section_len(player, pos, meta)
 			local junc = minetest.deserialize(s_junc)
 			if #junc == 2 then
 				local dist = railtrack:get_distance(junc[1], junc[2])
-				if dist > RAILTRACK_WARN_SECTION_LEN then
-					local name = player:get_player_name()
-					if name then
-						minetest.chat_send_player(name, "Warning, section"
-								.." length "..dist.." exceeds the recommended"
-								.." maximum of "..RAILTRACK_WARN_SECTION_LEN)
-						return true
+				if dist > RAILTRACK_MAX_SECTION_LEN then
+					local node = minetest.get_node(pos) or {}
+					if node.name then
+						minetest.swap_node(pos, {name=node.name.."_union"})
+						railtrack:update_rails(pos)
 					end
 				end
 			end

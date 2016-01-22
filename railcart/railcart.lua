@@ -215,11 +215,12 @@ function railcart:update(cart, time, object)
 		end
 	end
 	local speed = railcart:velocity_to_speed(cart.vel)
-	if not cart.target then
+	if cart.target then
+		cart.dir = railtrack:get_direction(cart.target, cart.pos)
+	else
 		speed = 0
 	end
 	if speed > RAILCART_SPEED_MIN then
-		cart.dir = railtrack:get_direction(cart.target, cart.pos)
 		local d1 = railtrack:get_distance(cart.prev, cart.target)
 		local d2 = railtrack:get_distance(cart.prev, cart.pos)
 		local dist = d1 - d2

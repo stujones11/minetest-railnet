@@ -165,12 +165,16 @@ minetest.register_craftitem("railcart:cart", {
 				return
 			end
 		end
+		local cons = railtrack:get_connections(pos)
 		local cart = railcart.cart:new()
 		cart.id = #railcart.allcarts + 1
 		cart.inv = railcart:create_detached_inventory(cart.id)
 		cart.pos = pos
 		cart.prev = vector.new(pos)
 		cart.accel = railtrack:get_acceleration(pos)
+		if cons[1] then
+			cart.target = cons[1]
+		end
 		table.insert(railcart.allcarts, cart)
 		railcart:save()
 		if not minetest.setting_getbool("creative_mode") then

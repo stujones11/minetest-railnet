@@ -52,7 +52,7 @@ function railcart.cart:on_step(dtime)
 		return
 	end
 	self.timer = RAILCART_OBJECT_UPDATE_TIME
-	local entity = railcart:get_cart_ref(self.id)
+	local entity = railcart:get_cart_entity(self.id)
 	if entity.object then
 		return
 	end
@@ -116,7 +116,27 @@ function railcart:create_detached_inventory(id)
 	return inv
 end
 
-function railcart:get_cart_ref(id)
+function railcart:remove_cart(id)
+	for i, cart in pairs(railcart.allcarts) do
+		if cart.id == id then
+			railcart.allcarts[i] = nil
+			railcart:save()
+			break
+		end
+	end
+end
+
+function railcart:get_new_id()
+	local id = 0
+	for _, cart in pairs(railcart.allcarts) do
+		if cart.id > id then
+			id = cart.id
+		end
+	end
+	return id + 1
+end
+
+function railcart:get_cart_entity(id)
 	local cart_ref = {}
 	for _, ref in pairs(minetest.luaentities) do
 		if ref.cart then

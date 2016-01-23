@@ -68,8 +68,7 @@ minetest.register_entity("railcart:cart_entity", {
 		if puncher:get_player_control().sneak then
 			if self.cart then
 				if self.cart.id then
-					railcart.allcarts[self.cart.id] = nil
-					railcart:save()
+					railcart:remove_cart(self.cart.id)
 				end
 			end
 			self.object:remove()
@@ -167,7 +166,7 @@ minetest.register_craftitem("railcart:cart", {
 		end
 		local cons = railtrack:get_connections(pos)
 		local cart = railcart.cart:new()
-		cart.id = #railcart.allcarts + 1
+		cart.id = railcart:get_new_id()
 		cart.inv = railcart:create_detached_inventory(cart.id)
 		cart.pos = pos
 		cart.prev = vector.new(pos)

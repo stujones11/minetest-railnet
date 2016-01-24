@@ -88,6 +88,17 @@ minetest.register_entity("railcart:cart_entity", {
 			return
 		end
 		if self.cart and direction then
+			if self.driver then
+				direction = {x=0, y=0, z=0}
+				local ld = self.driver:get_look_dir()
+				if ld.y > -0.99 then
+					direction = {
+						x = railtrack:get_sign(ld.x),
+						z = railtrack:get_sign(ld.z),
+						y = self.cart.dir.y
+					}
+				end
+			end
 			local pos = vector.round(self.object:getpos())
 			local dir = vector.round(vector.normalize(direction))
 			local speed = railcart:velocity_to_speed(self.cart.vel)

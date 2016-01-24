@@ -14,7 +14,6 @@ railcart = {
 
 railcart.cart = {
 	id = nil,
-	entity = {},
 	pos = nil,
 	target = nil,
 	prev = nil,
@@ -84,7 +83,6 @@ function railcart:save()
 			end
 		end
 		ref.inv = inv
-		ref.entity = nil
 		table.insert(carts, ref)
 	end
 	local output = io.open(minetest.get_worldpath().."/railcart.txt",'w')
@@ -126,6 +124,22 @@ function railcart:remove_cart(id)
 	end
 end
 
+function railcart:get_rail_direction(pos)
+	local target = nil
+	local cons = railtrack:get_connections(pos)
+	local ymax = pos.y
+	for _, con in pairs(cons) do
+		if con.y >= ymax then
+			ymax = con.y
+			target = con
+		end
+	end
+	if target then
+		return railtrack:get_direction(target, pos)
+	end
+	return {x=0, y=0, z=0}
+end
+
 function railcart:get_new_id()
 	local id = 0
 	for _, cart in pairs(railcart.allcarts) do
@@ -147,6 +161,39 @@ function railcart:get_cart_entity(id)
 		end
 	end
 	return cart_ref
+end
+
+function railcart:get_carts_in_radius(pos, rad)
+	local carts = {}
+	for _, cart in pairs(railcart.allcarts) do
+		local px = pos.x - cart.pos.x
+		local py = pos.y - cart.pos.y
+		local pz = pos.z - cart.pos.z
+		if (px * px) + (py * py) + (pz * pz) <= rad * rad then
+			table.insert(carts, cart)
+		end
+	end
+	return carts
+end
+
+function railcart:get_cart_in_sight(p1, p2)
+	local ref = nil
+	local dist = railtrack:get_distance(p1, p2) + 1
+	local dir = railtrack:get_direction(p2, p1)
+	local carts = railcart:get_carts_in_radius(p1, dist)
+	for _, cart in pairs(carts) do
+		if not vector.equals(p1, cart.pos) then
+			local dc = railtrack:get_direction(cart.pos, p1)
+			if vector.equals(dc, dir) then
+				local d = railtrack:get_distance(p1, cart.pos)
+				if d < dist then
+					dist = d
+					ref = cart
+				end
+			end
+		end
+	end
+	return ref
 end
 
 function railcart:get_delta_time(vel, acc, dist)
@@ -236,11 +283,23 @@ function railcart:update(cart, time, object)
 	end
 	local speed = railcart:velocity_to_speed(cart.vel)
 	if cart.target then
-		cart.dir = railtrack:get_direction(cart.target, cart.pos)
+		if vector.equals(cart.target, cart.pos) then
+			cart.dir = railcart:get_rail_direction(cart.pos)
+		else
+			cart.dir = railtrack:get_direction(cart.target, cart.pos)
+		end
 	else
 		speed = 0
 	end
 	if speed > RAILCART_SPEED_MIN then
+		local blocked = false
+		local cis = railcart:get_cart_in_sight(cart.pos, cart.target)
+		if cis then
+			if railcart:velocity_to_speed(cis.vel) == 0 then
+				cart.target = vector.subtract(cis.pos, cart.dir)
+				blocked = true
+			end
+		end
 		local d1 = railtrack:get_distance(cart.prev, cart.target)
 		local d2 = railtrack:get_distance(cart.prev, cart.pos)
 		local dist = d1 - d2
@@ -273,11 +332,16 @@ function railcart:update(cart, time, object)
 				cart.pos = vector.add(cart.pos, vector.multiply(cart.dir, dp))
 			end
 		else
-			cart.pos = vector.new(cart.target)
-			cart.prev = vector.new(cart.target)
-			cart.accel = railtrack:get_acceleration(cart.target)
-			cart.target = nil
-			return 0
+			if blocked and vector.equals(cart.target, cart.prev) then
+				cart.vel = {x=0, y=0, z=0}
+				cart.acc = {x=0, y=0, z=0}
+			else
+				cart.pos = vector.new(cart.target)
+				cart.prev = vector.new(cart.target)
+				cart.accel = railtrack:get_acceleration(cart.target)
+				cart.target = nil
+				return 0
+			end
 		end
 	else
 		cart.vel = {x=0, y=0, z=0}

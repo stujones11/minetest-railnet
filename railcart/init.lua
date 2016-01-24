@@ -154,26 +154,27 @@ minetest.register_craftitem("railcart:cart", {
 		if not name or pointed_thing.type ~= "node" then
 			return
 		end
-		local pos = pointed_thing.under
-		if not railtrack:is_railnode(pos) then
-			return
-		end
 		if not minetest.is_singleplayer() then
 			if not minetest.check_player_privs(name, {carts=true}) then
 				minetest.chat_send_player(name, "Requires carts privilege")
 				return
 			end
 		end
-		local cons = railtrack:get_connections(pos)
+		local pos = pointed_thing.under
+		if not railtrack:is_railnode(pos) then
+			return
+		end
+		local carts = railcart:get_carts_in_radius(pos, 0.9)
+		if #carts > 0 then
+			return
+		end
 		local cart = railcart.cart:new()
 		cart.id = railcart:get_new_id()
 		cart.inv = railcart:create_detached_inventory(cart.id)
-		cart.pos = pos
+		cart.pos = vector.new(pos)
 		cart.prev = vector.new(pos)
 		cart.accel = railtrack:get_acceleration(pos)
-		if cons[1] then
-			cart.target = cons[1]
-		end
+		cart.dir = railcart:get_rail_direction(pos)
 		table.insert(railcart.allcarts, cart)
 		railcart:save()
 		if not minetest.setting_getbool("creative_mode") then

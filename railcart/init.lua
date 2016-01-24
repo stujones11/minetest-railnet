@@ -68,6 +68,11 @@ minetest.register_entity("railcart:cart_entity", {
 		if puncher:get_player_control().sneak then
 			if self.cart then
 				if self.cart.id then
+					if self.cart.inv then
+						if not self.cart.inv:is_empty("main") then
+							return
+						end
+					end
 					railcart:remove_cart(self.cart.id)
 				end
 			end

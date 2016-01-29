@@ -192,7 +192,7 @@ end
 
 function railtrack:get_connections(pos)
 	local connections = {}
-	for y = -1, 1 do
+	for y = 1, -1, -1 do
 		for x = -1, 1 do
 			for z = -1, 1 do
 				if math.abs(x) ~= math.abs(z) then

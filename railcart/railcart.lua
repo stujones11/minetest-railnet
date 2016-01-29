@@ -135,6 +135,9 @@ function railcart:get_rail_direction(pos)
 		end
 	end
 	if target then
+		if #cons == 1 then
+			target.y = pos.y
+		end
 		return railtrack:get_direction(target, pos)
 	end
 	return {x=0, y=0, z=0}
@@ -283,11 +286,7 @@ function railcart:update(cart, time, object)
 	end
 	local speed = railcart:velocity_to_speed(cart.vel)
 	if cart.target then
-		if vector.equals(cart.target, cart.pos) then
-			cart.dir = railcart:get_rail_direction(cart.pos)
-		else
-			cart.dir = railtrack:get_direction(cart.target, cart.pos)
-		end
+		cart.dir = railtrack:get_direction(cart.target, cart.pos)
 	else
 		speed = 0
 	end
@@ -299,6 +298,14 @@ function railcart:update(cart, time, object)
 				cart.target = vector.subtract(cis.pos, cart.dir)
 				blocked = true
 			end
+		end
+		local p1 = vector.add(cart.pos, {x=0, y=1, z=0})
+		local p2 = vector.add(cart.target, {x=0, y=1, z=0})
+		local los, bp = minetest.line_of_sight(p1, p2)
+		if los == false then
+			bp.y = bp.y - 1
+			cart.target = vector.subtract(bp, cart.dir)
+			blocked = true
 		end
 		local d1 = railtrack:get_distance(cart.prev, cart.target)
 		local d2 = railtrack:get_distance(cart.prev, cart.pos)
@@ -344,6 +351,7 @@ function railcart:update(cart, time, object)
 			end
 		end
 	else
+		cart.dir = railcart:get_rail_direction(cart.pos)
 		cart.vel = {x=0, y=0, z=0}
 		cart.acc = {x=0, y=0, z=0}
 	end

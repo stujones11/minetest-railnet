@@ -299,13 +299,17 @@ function railcart:update(cart, time, object)
 				blocked = true
 			end
 		end
-		local p1 = vector.add(cart.pos, {x=0, y=1, z=0})
-		local p2 = vector.add(cart.target, {x=0, y=1, z=0})
-		local los, bp = minetest.line_of_sight(p1, p2)
-		if los == false then
-			bp.y = bp.y - 1
-			cart.target = vector.subtract(bp, cart.dir)
-			blocked = true
+		if object then
+			local p1 = vector.add(cart.pos, {x=0, y=1, z=0})
+			local p2 = vector.add(cart.target, {x=0, y=1, z=0})
+			if minetest.get_node_or_nil(p2) then
+				local los, bp = minetest.line_of_sight(p1, p2)
+				if los == false then
+					bp.y = bp.y - 1
+					cart.target = vector.subtract(bp, cart.dir)
+					blocked = true
+				end
+			end
 		end
 		local d1 = railtrack:get_distance(cart.prev, cart.target)
 		local d2 = railtrack:get_distance(cart.prev, cart.pos)

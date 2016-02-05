@@ -299,6 +299,7 @@ function railcart:update(cart, time, object)
 				blocked = true
 			end
 		end
+--[[
 		if object then
 			local p1 = vector.add(cart.pos, {x=0, y=1, z=0})
 			local p2 = vector.add(cart.target, {x=0, y=1, z=0})
@@ -311,6 +312,7 @@ function railcart:update(cart, time, object)
 				end
 			end
 		end
+]]--
 		local d1 = railtrack:get_distance(cart.prev, cart.target)
 		local d2 = railtrack:get_distance(cart.prev, cart.pos)
 		local dist = d1 - d2

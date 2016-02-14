@@ -3,6 +3,29 @@ local modpath = minetest.get_modpath(minetest.get_current_modname())
 dofile(modpath.."/railcart.lua")
 
 local worldpath = minetest.get_worldpath()
+
+local function create_detached_inventory(id)
+	local inv = minetest.create_detached_inventory("railcart_"..tostring(id), {
+		on_put = function(inv, listname, index, stack, player)
+			railcart:save()
+		end,
+		on_take = function(inv, listname, index, stack, player)
+			railcart:save()
+		end,
+		allow_put = function(inv, listname, index, stack, player)
+			return 1
+		end,
+		allow_take = function(inv, listname, index, stack, player)
+			return stack:get_count()
+		end,
+		allow_move = function(inv, from_list, from_index, to_list, to_index, count, player)
+			return count
+		end,
+	})
+	inv:set_size("main", 32)
+	return inv
+end
+
 local input = io.open(worldpath.."/railcart.txt", "r")
 if input then
 	local data = input:read('*all')
@@ -10,12 +33,13 @@ if input then
 		local carts = minetest.deserialize(data) or {}
 		for id, ref in pairs(carts) do
 			local cart = railcart.cart:new(ref)
-			local inv = railcart:create_detached_inventory(cart.id)
-			ref.inv = ref.inv or {}
-			for i, stack in pairs(ref.inv) do
-				inv:set_stack("main", i, stack)
+			if ref.inv then
+				local inv = create_detached_inventory(cart.id)
+				for i, stack in pairs(ref.inv) do
+					inv:set_stack("main", i, stack)
+				end
+				cart.inv = inv
 			end
-			cart.inv = inv
 			railcart.allcarts[id] = cart
 		end
 	end
@@ -28,39 +52,7 @@ local function is_valid_player(object)
 	end
 end
 
-minetest.register_globalstep(function(dtime)
-	for _, cart in pairs(railcart.allcarts) do
-		cart:on_step(dtime)
-	end
-	railcart.timer = railcart.timer + dtime
-	if railcart.timer > RAILCART_OBJECT_SAVE_TIME then
-		railcart:save()
-		railcart.timer = 0
-	end
-end)
-
-minetest.register_on_shutdown(function()
-	railcart:save()
-end)
-
-minetest.register_privilege("carts", "Player can pick-up and place carts.")
-
-minetest.register_entity("railcart:cart_entity", {
-	physical = false,
-	collisionbox = {-0.5,-0.5,-0.5, 0.5,0.5,0.5},
-	visual = "mesh",
-	mesh = "railcart.x",
-	visual_size = {x=1, y=1},
-	textures = {"cart.png"},
-	cart = nil,
-	driver = nil,
-	timer = 0,
-	on_activate = function(self, staticdata, dtime_s)
-		self.object:set_armor_groups({immortal=1})
-		if staticdata == "expired" then
-			self.object:remove()
-		end
-	end,
+railcart:register_entity("railcart:cart_entity", {
 	on_punch = function(self, puncher, _, _, direction)
 		if not is_valid_player(puncher) then
 			return
@@ -105,7 +97,7 @@ minetest.register_entity("railcart:cart_entity", {
 			self.timer = 0
 			self.cart.target = nil
 			self.cart.prev = pos
-			self.cart.vel = vector.multiply(dir, RAILCART_SPEED_PUSH)
+			self.cart.vel = vector.multiply(dir, 5)
 			self.cart.accel = railtrack:get_acceleration(pos)
 			self.object:setvelocity(self.cart.vel)
 		end
@@ -138,27 +130,6 @@ minetest.register_entity("railcart:cart_entity", {
 			clicker:set_attach(self.object, "", {x=0,y=5,z=0}, {x=0,y=0,z=0})
 		end
 	end,
-	on_step = function(self, dtime)
-		local cart = self.cart
-		local object = self.object
-		if not cart or not object then
-			return
-		end
-		self.timer = self.timer - dtime
-		if self.timer > 0 then
-			return
-		end
-		self.timer = railcart:update(cart, RAILCART_ENTITY_UPDATE_TIME, object)
-	end,
-	get_staticdata = function(self)
-		if self.cart then
-			if self.cart:is_loaded() == false then
-				self.cart.timer = 0
-				self.object:remove()
-			end
-		end
-		return "expired"
-	end,
 })
 
 minetest.register_craftitem("railcart:cart", {
@@ -184,13 +155,16 @@ minetest.register_craftitem("railcart:cart", {
 		if #carts > 0 then
 			return
 		end
-		local cart = railcart.cart:new()
-		cart.id = railcart:get_new_id()
-		cart.inv = railcart:create_detached_inventory(cart.id)
-		cart.pos = vector.new(pos)
-		cart.prev = vector.new(pos)
-		cart.accel = railtrack:get_acceleration(pos)
-		cart.dir = railcart:get_rail_direction(pos)
+		local id = railcart:get_new_id()
+		local ref = {
+			id = id,
+			inv = create_detached_inventory(id),
+			pos = vector.new(pos),
+			prev = vector.new(pos),
+			accel = railtrack:get_acceleration(pos),
+			dir = railcart:get_rail_direction(pos),
+		}
+		local cart = railcart.cart:new(ref)
 		table.insert(railcart.allcarts, cart)
 		railcart:save()
 		if not minetest.setting_getbool("creative_mode") then
@@ -200,6 +174,8 @@ minetest.register_craftitem("railcart:cart", {
 	end,
 })
 
+minetest.register_privilege("carts", "Player can pick-up and place carts.")
+
 minetest.register_craft({
 	output = "railcart:cart",
 	recipe = {
@@ -208,4 +184,8 @@ minetest.register_craft({
 		{"group:wood", "default:steel_ingot", "group:wood"},
 	},
 })
+
+minetest.register_on_shutdown(function()
+	railcart:save()
+end)
 

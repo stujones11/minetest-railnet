@@ -1,15 +1,25 @@
-RAILCART_ENTITY_UPDATE_TIME = 1
-RAILCART_OBJECT_UPDATE_TIME = 5
-RAILCART_OBJECT_SAVE_TIME = 10
-RAILCART_RELOAD_DISTANCE = 32
-RAILCART_SNAP_DISTANCE = 0.5
-RAILCART_SPEED_PUSH = 5
-RAILCART_SPEED_MIN = 0.1
-RAILCART_SPEED_MAX = 20
+local ENTITY_UPDATE_TIME = 1
+local OBJECT_UPDATE_TIME = 5
+local OBJECT_SAVE_TIME = 10
+local RELOAD_DISTANCE = 32
+local SNAP_DISTANCE = 0.5
+local SPEED_MIN = 0.1
+local SPEED_MAX = 15
 
 railcart = {
 	timer = 0,
 	allcarts = {},
+	default_entity = {
+		physical = false,
+		collisionbox = {-0.5,-0.5,-0.5, 0.5,0.5,0.5},
+		visual = "mesh",
+		mesh = "railcart.x",
+		visual_size = {x=1, y=1},
+		textures = {"cart.png"},
+		cart = nil,
+		driver = nil,
+		timer = 0,
+	},
 }
 
 railcart.cart = {
@@ -23,6 +33,7 @@ railcart.cart = {
 	vel = {x=0, y=0, z=0},
 	acc = {x=0, y=0, z=0},
 	timer = 0,
+	name = "railcart:cart_entity",
 }
 
 function railcart.cart:new(obj)
@@ -37,7 +48,7 @@ function railcart.cart:is_loaded()
 		local pos = player:getpos()
 		if pos then
 			local dist = railtrack:get_distance(pos, self.pos)
-			if dist <= RAILCART_RELOAD_DISTANCE then
+			if dist <= RELOAD_DISTANCE then
 				return true
 			end
 		end
@@ -50,13 +61,13 @@ function railcart.cart:on_step(dtime)
 	if self.timer > 0 then
 		return
 	end
-	self.timer = RAILCART_OBJECT_UPDATE_TIME
+	self.timer = OBJECT_UPDATE_TIME
 	local entity = railcart:get_cart_entity(self.id)
 	if entity.object then
 		return
 	end
 	if self:is_loaded() then
-		local object = minetest.add_entity(self.pos, "railcart:cart_entity")
+		local object = minetest.add_entity(self.pos, self.name)
 		if object then
 			entity = object:get_luaentity() or {}
 			entity.cart = self
@@ -66,6 +77,56 @@ function railcart.cart:on_step(dtime)
 	else
 		self.timer = railcart:update(self, self.timer)
 	end
+end
+
+function railcart:register_entity(name, def)
+	local ref = {}
+	for k, v in pairs(railcart.default_entity) do
+		ref[k] = def[k] or railtrack:copy(v)
+	end
+	ref.on_activate = function(self, staticdata, dtime_s)
+		if type(def.on_activate) == "function" then
+			def.on_activate(self, staticdata, dtime_s)
+		end
+		self.object:set_armor_groups({immortal=1})
+		if staticdata == "expired" then
+			self.object:remove()
+		end
+	end
+	ref.on_step = function(self, dtime)
+		if type(def.on_step) == "function" then
+			def.on_step(self, dtime)
+		end
+		local cart = self.cart
+		local object = self.object
+		if not cart or not object then
+			return
+		end
+		self.timer = self.timer - dtime
+		if self.timer > 0 then
+			return
+		end
+		self.timer = railcart:update(cart, ENTITY_UPDATE_TIME, object)
+		if type(def.on_update) == "function" then
+			def.on_update(self)
+		end
+	end
+	ref.get_staticdata = function(self)
+		if type(def.get_staticdata) == "function" then
+			def.get_staticdata(self)
+		end
+		if self.cart then
+			if self.cart:is_loaded() == false then
+				self.cart.timer = 0
+				self.object:remove()
+			end
+		end
+		return "expired"
+	end
+	for k, v in pairs(def) do
+		ref[k] = ref[k] or v
+	end
+	minetest.register_entity(name, ref)
 end
 
 function railcart:save()
@@ -90,28 +151,6 @@ function railcart:save()
 		output:write(minetest.serialize(carts))
 		io.close(output)
 	end
-end
-
-function railcart:create_detached_inventory(id)
-	local inv = minetest.create_detached_inventory("railcart_"..tostring(id), {
-		on_put = function(inv, listname, index, stack, player)
-			railcart:save()
-		end,
-		on_take = function(inv, listname, index, stack, player)
-			railcart:save()
-		end,
-		allow_put = function(inv, listname, index, stack, player)
-			return 1
-		end,
-		allow_take = function(inv, listname, index, stack, player)
-			return stack:get_count()
-		end,
-		allow_move = function(inv, from_list, from_index, to_list, to_index, count, player)
-			return count
-		end,
-	})
-	inv:set_size("main", 32)
-	return inv
 end
 
 function railcart:remove_cart(id)
@@ -151,6 +190,14 @@ function railcart:get_new_id()
 		end
 	end
 	return id + 1
+end
+
+function railcart:get_cart_ref(id)
+	for _, cart in pairs(railcart.allcarts) do
+		if cart.id == id then
+			return cart
+		end
+	end
 end
 
 function railcart:get_cart_entity(id)
@@ -222,10 +269,10 @@ end
 
 function railcart:velocity_to_speed(vel)
 	local speed = math.max(math.abs(vel.x), math.abs(vel.z))
-	if speed < RAILCART_SPEED_MIN then
+	if speed < SPEED_MIN then
 		speed = 0
-	elseif speed > RAILCART_SPEED_MAX then
-		speed = RAILCART_SPEED_MAX
+	elseif speed > SPEED_MAX then
+		speed = SPEED_MAX
 	end
 	return speed
 end
@@ -234,7 +281,7 @@ function railcart:get_target(pos, vel)
 	local meta = minetest.get_meta(vector.round(pos))
 	local dir = self:velocity_to_dir(vel)
 	local targets = {}
-	local rots = RAILTRACK_ROTATIONS
+	local rots = railtrack.rotations
 	local contype = meta:get_string("contype") or ""
 	local s_junc = meta:get_string("junctions") or ""
 	local s_cons = meta:get_string("connections") or ""
@@ -290,7 +337,7 @@ function railcart:update(cart, time, object)
 	else
 		speed = 0
 	end
-	if speed > RAILCART_SPEED_MIN then
+	if speed > SPEED_MIN then
 		local blocked = false
 		local cis = railcart:get_cart_in_sight(cart.pos, cart.target)
 		if cis then
@@ -316,16 +363,16 @@ function railcart:update(cart, time, object)
 		local d1 = railtrack:get_distance(cart.prev, cart.target)
 		local d2 = railtrack:get_distance(cart.prev, cart.pos)
 		local dist = d1 - d2
-		if dist > RAILCART_SNAP_DISTANCE then
-			local accel = RAILTRACK_ACCEL_FLAT
+		if dist > SNAP_DISTANCE then
+			local accel = railtrack.accel_flat
 			if cart.dir.y == -1 then
-				accel = RAILTRACK_ACCEL_DOWN
+				accel = railtrack.accel_down
 			elseif cart.dir.y == 1 then
-				accel = RAILTRACK_ACCEL_UP
+				accel = railtrack.accel_up
 			end
 			accel = cart.accel or accel
 			if object then
-				dist = math.max(dist - RAILCART_SNAP_DISTANCE, 0)
+				dist = math.max(dist - SNAP_DISTANCE, 0)
 			end
 			local dt = railcart:get_delta_time(speed, accel, dist)
 			if dt < time then
@@ -383,4 +430,15 @@ function railcart:update(cart, time, object)
 	end
 	return time
 end
+
+minetest.register_globalstep(function(dtime)
+	for _, cart in pairs(railcart.allcarts) do
+		cart:on_step(dtime)
+	end
+	railcart.timer = railcart.timer + dtime
+	if railcart.timer > OBJECT_SAVE_TIME then
+		railcart:save()
+		railcart.timer = 0
+	end
+end)
 

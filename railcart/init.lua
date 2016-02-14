@@ -134,8 +134,8 @@ railcart:register_entity("railcart:cart_entity", {
 
 minetest.register_craftitem("railcart:cart", {
 	description = "Railcart",
-	inventory_image = minetest.inventorycube("cart_top.png", "cart_side.png", "cart_side.png"),
-	wield_image = "cart_side.png",
+	inventory_image = minetest.inventorycube("railcart_top.png", "railcart_side.png", "railcart_side.png"),
+	wield_image = "railcart_side.png",
 	on_place = function(itemstack, placer, pointed_thing)
 		local name = placer:get_player_name()
 		if not name or pointed_thing.type ~= "node" then

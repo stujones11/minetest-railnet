@@ -10,16 +10,12 @@ Authors of media files:
 
 HybridDog: WTFPL
 
-  cart.png
-  cart_bottom.png
-  cart_side.png
-  cart_top.png
+  railcart.png
+  railcart_bottom.png
+  railcart_side.png
+  railcart_top.png
 
 rarkenin:
 
   cart_rail_*.png
-
-Zeg9:
-
-  cart.x
 

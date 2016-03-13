@@ -13,7 +13,7 @@ local function create_detached_inventory(id)
 			railcart:save()
 		end,
 		allow_put = function(inv, listname, index, stack, player)
-			return 1
+			return stack:get_count()
 		end,
 		allow_take = function(inv, listname, index, stack, player)
 			return stack:get_count()

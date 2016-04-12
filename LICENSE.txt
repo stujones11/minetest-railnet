@@ -8,12 +8,12 @@ License of media (textures, sounds and models not otherwise specified): CC-0
 Authors of media files:
 -----------------------
 
-HybridDog: WTFPL
+Gambit : WTFPL - Modified by Napiophelios
 
-  railcart.png
-  railcart_bottom.png
-  railcart_side.png
-  railcart_top.png
+   railcart.png
+   railcart_bottom.png
+   railcart_side.png
+   railcart_top.png
 
 rarkenin:
 

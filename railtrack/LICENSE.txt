@@ -8,7 +8,8 @@ License of media (textures, sounds and models not otherwise specified): CC-0
 Authors of media files:
 -----------------------
 
-rarkenin:
+Napiophelios:
 
-  cart_rail_*.png
+  carts_rail_*.png
+  default_rail_*.png
 

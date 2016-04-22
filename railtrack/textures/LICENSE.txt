@@ -1,0 +1,10 @@
+
+License of media (textures): CC-0
+
+Authors of media files:
+-----------------------
+
+Napiophelios:
+
+  carts_rail_*.png
+  default_rail_*.png

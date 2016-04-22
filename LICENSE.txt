@@ -5,8 +5,8 @@ License Source Code: LGPL v2.1
 
 License of media (textures, sounds and models not otherwise specified): CC-0
 
-Authors of media files:
------------------------
+Authors of original media files:
+-----------------------------------
 
 Gambit : WTFPL
 
